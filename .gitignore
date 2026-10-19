@@ -1,0 +1,8 @@
+# Compiled binaries
+build/
+*.o
+*.out
+*.exe
+
+# IDE-specific settings
+.vscode/
