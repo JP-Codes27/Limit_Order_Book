@@ -1,0 +1,90 @@
+=== Environment ===
+compiler      : gcc 16.1.0
+c++ standard  : 202002
+build type    : Release   git: 7830d4b
+NDEBUG        : defined
+os            : windows
+cpu           : Intel(R) Core(TM) Ultra 5 125H (18 logical)
+invariant TSC : yes
+timer         : rdtscp+lfence, 0.3339 ns/tick, call overhead 12.0 ns, granularity 12.7 ns
+pinning       : disabled
+
+=== OS noise floor (idle spin, 2.0 s) ===
+largest gap 1013.8 us; gaps >1us: 2229, >10us: 520, >100us: 22
+Tail latencies at or below the largest gap are not a property of the engine.
+
+=== Throughput: 21 interleaved runs, batches of 64 ops, 2 warm-up rounds ===
+ns/op: min / median / MAD.  Lower is better.  checksum = canonical hash of trades + final book
+
+[realistic-mixed] ~54% add / ~34% cancel of a live order / ~10% marketable / 2% sweep; steady ~targetLive resting orders
+    timed ops=400000  prefill ops=20000
+    V1 (map+list+unordered_map)       108.6 /    112.0 /    1.4 ns/op   (8.93 Mops/s at median)   checksum=0x6168c0740d9856cb
+    book at end: 19183 resting orders, 181998 trades
+  per-operation latency, V1 (map+list+unordered_map) (timer overhead subtracted, resolution ~13 ns):
+    first replay           n=400000 mean=118  p50=102  p90=178  p99=429  p99.9=1219  p99.99=6203  max=578918 ns  (<= OS noise floor)
+      histogram (ns):  <32:55227  32-64:18090  64-128:211984  128-256:103718  256-512:8025  512-1k:2347  1k-4k:539  4k-16k:56  16k-64k:9  64k-256k:2  256k-1M:3
+    steady (warmed)        n=400000 mean=111  p50=97  p90=170  p99=411  p99.9=1098  p99.99=3998  max=576043 ns  (<= OS noise floor)
+      histogram (ns):  <32:55841  32-64:23573  64-128:219361  128-256:92100  256-512:6456  512-1k:2181  1k-4k:451  4k-16k:29  16k-64k:3  64k-256k:2  256k-1M:3
+
+[insert-random-256] insert into an empty book, uniformly random price over L levels
+    timed ops=200000  prefill ops=0
+    V1 (map+list+unordered_map)       146.9 /    164.9 /    7.4 ns/op   (6.06 Mops/s at median)   checksum=0xb8e2f0d2a008422d
+    book at end: 200000 resting orders, 0 trades
+  per-operation latency, V1 (map+list+unordered_map) (timer overhead subtracted, resolution ~13 ns):
+    first replay           n=200000 mean=185  p50=87  p90=113  p99=203  p99.9=20766  p99.99=42551  max=6744556 ns
+      histogram (ns):  32-64:1074  64-128:186671  128-256:10808  256-512:963  512-1k:136  1k-4k:39  4k-16k:36  16k-64k:267  64k-256k:2  256k-1M:2  >=1M:2
+    steady (warmed)        n=200000 mean=164  p50=87  p90=109  p99=268  p99.9=20148  p99.99=35304  max=4134218 ns
+      histogram (ns):  32-64:943  64-128:184484  128-256:12239  256-512:1935  512-1k:62  1k-4k:31  4k-16k:38  16k-64k:261  64k-256k:3  256k-1M:1  >=1M:3
+
+[insert-random-65536] insert into an empty book, uniformly random price over L levels
+    timed ops=200000  prefill ops=0
+    V1 (map+list+unordered_map)       327.1 /    350.8 /   13.8 ns/op   (2.85 Mops/s at median)   checksum=0xb27d1b2219c6eaaa
+    book at end: 200000 resting orders, 0 trades
+  per-operation latency, V1 (map+list+unordered_map) (timer overhead subtracted, resolution ~13 ns):
+    first replay           n=200000 mean=392  p50=250  p90=439  p99=757  p99.9=21873  p99.99=56138  max=5836889 ns
+      histogram (ns):  64-128:466  128-256:106740  256-512:80729  512-1k:11461  1k-4k:208  4k-16k:81  16k-64k:302  64k-256k:9  256k-1M:1  >=1M:3
+    steady (warmed)        n=200000 mean=333  p50=238  p90=338  p99=584  p99.9=21385  p99.99=43333  max=5215237 ns
+      histogram (ns):  64-128:488  128-256:127883  256-512:67742  512-1k:3450  1k-4k:66  4k-16k:66  16k-64k:295  64k-256k:7  256k-1M:1  >=1M:2
+
+[cancel-random-256] cancel all orders in random order (book prebuilt, L levels)
+    timed ops=200000  prefill ops=200000
+    V1 (map+list+unordered_map)       155.6 /    188.7 /   24.1 ns/op   (5.30 Mops/s at median)   checksum=0xdb8ae71da94e7d90
+    book at end: 0 resting orders, 0 trades
+  per-operation latency, V1 (map+list+unordered_map) (timer overhead subtracted, resolution ~13 ns):
+    first replay           n=200000 mean=286  p50=248  p90=471  p99=646  p99.9=1461  p99.99=52070  max=200807 ns  (<= OS noise floor)
+      histogram (ns):  32-64:745  64-128:31286  128-256:74557  256-512:81899  512-1k:11149  1k-4k:282  4k-16k:35  16k-64k:34  64k-256k:13
+    steady (warmed)        n=200000 mean=305  p50=250  p90=505  p99=974  p99.9=1579  p99.99=43768  max=291599 ns  (<= OS noise floor)
+      histogram (ns):  32-64:560  64-128:27144  128-256:77249  256-512:75898  512-1k:17652  1k-4k:1412  4k-16k:51  16k-64k:23  64k-256k:10  256k-1M:1
+
+[cancel-random-65536] cancel all orders in random order (book prebuilt, L levels)
+    timed ops=200000  prefill ops=200000
+    V1 (map+list+unordered_map)       250.8 /    292.3 /   23.0 ns/op   (3.42 Mops/s at median)   checksum=0xdb8ae71da94e7d90
+    book at end: 0 resting orders, 0 trades
+  per-operation latency, V1 (map+list+unordered_map) (timer overhead subtracted, resolution ~13 ns):
+    first replay           n=200000 mean=533  p50=471  p90=855  p99=1252  p99.9=2521  p99.99=47815  max=789760 ns  (<= OS noise floor)
+      histogram (ns):  32-64:32  64-128:3513  128-256:18986  256-512:89475  512-1k:81499  1k-4k:6360  4k-16k:92  16k-64k:31  64k-256k:11  256k-1M:1
+    steady (warmed)        n=200000 mean=378  p50=351  p90=584  p99=929  p99.9=1623  p99.99=15662  max=98954 ns  (<= OS noise floor)
+      histogram (ns):  32-64:39  64-128:6676  128-256:49600  256-512:110417  512-1k:32076  1k-4k:1132  4k-16k:41  16k-64k:11  64k-256k:8
+
+[deep-sweep] taker crossing 50 levels (150 fills) per sweep; ~1000 live levels; level erase heavy
+    timed ops=226500  prefill ops=3000
+    V1 (map+list+unordered_map)       117.6 /    124.5 /    3.4 ns/op   (8.03 Mops/s at median)   checksum=0x1e176129aab58bb5
+    book at end: 3000 resting orders, 225000 trades
+  per-operation latency, V1 (map+list+unordered_map) (timer overhead subtracted, resolution ~13 ns):
+    first replay           n=226500 mean=125  p50=67  p90=110  p99=201  p99.9=6042  p99.99=13202  max=601562 ns  (<= OS noise floor)
+      histogram (ns):  32-64:71361  64-128:145535  128-256:7777  256-512:253  512-1k:29  1k-4k:24  4k-16k:1505  16k-64k:12  64k-256k:2  256k-1M:2
+    steady (warmed)        n=226500 mean=123  p50=70  p90=111  p99=189  p99.9=5876  p99.99=9043  max=481390 ns  (<= OS noise floor)
+      histogram (ns):  32-64:25519  64-128:191077  128-256:8208  256-512:156  512-1k:14  1k-4k:22  4k-16k:1495  16k-64k:5  64k-256k:2  256k-1M:2
+
+[level-churn] per cycle: add at new level, cancel it, 2 marketable one-lots (3 live levels)
+    timed ops=200000  prefill ops=100000
+    V1 (map+list+unordered_map)        47.7 /     53.5 /    3.3 ns/op   (18.70 Mops/s at median)   checksum=0xcdb3bc7ab26d818b
+    book at end: 0 resting orders, 100000 trades
+  per-operation latency, V1 (map+list+unordered_map) (timer overhead subtracted, resolution ~13 ns):
+    first replay           n=200000 mean=64  p50=45  p90=67  p99=226  p99.9=873  p99.99=10264  max=370326 ns  (<= OS noise floor)
+      histogram (ns):  32-64:163276  64-128:30135  128-256:5029  256-512:1264  512-1k:141  1k-4k:126  4k-16k:12  16k-64k:13  64k-256k:3  256k-1M:1
+    steady (warmed)        n=200000 mean=58  p50=45  p90=67  p99=174  p99.9=529  p99.99=3466  max=363867 ns  (<= OS noise floor)
+      histogram (ns):  32-64:155289  64-128:42090  128-256:1688  256-512:730  512-1k:90  1k-4k:99  4k-16k:10  16k-64k:2  64k-256k:1  256k-1M:1
+
+Notes: 'first replay' = fresh book, allocator warmed only by earlier workloads in this process;
+for a true cold start run a fresh process with --only <workload>.
